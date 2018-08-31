@@ -9,5 +9,13 @@ public class WhileForm : MonoBehaviour
 
 	public Expression mainExpression;
 	public string Corpus;
+	public Queue<Command> commands;
+
+	public WhileForm ()
+	{
+		mainExpression = new Expression ();
+		Corpus = "";
+		commands = new Queue<Command> ();
+	}
 
 }

@@ -14,6 +14,29 @@ public class PlattaformTest : MonoBehaviour
 	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals}
 	public Direction MOVE_direction;
 	public float MOVE_speed;
+	public Queue pipeline;
+
+	void Start () 
+	{
+		pipeline = new Queue ();
+	}
+
+	void Update () 
+	{
+		Debug.Log (pipeline.Count);
+		Queue executedPipeline = new Queue ();
+		while(pipeline.Count > 0)
+		{
+			System.Object task = pipeline.Dequeue();
+			executedPipeline.Enqueue (task);
+			//Need reform
+			WhileForm whileCommand = (task as WhileForm);
+			whileAct (whileCommand);
+		}
+		pipeline = executedPipeline;
+
+
+	}
 
 	void OnMouseDown()
 	{
@@ -86,13 +109,6 @@ public class PlattaformTest : MonoBehaviour
 				}
 
 			}
-			/* 
-			 Debug.Log ("" + stringIndexInitCondition.ToString() + " " 
-				+ stringIndexEndCondition.ToString() + " " 
-				+ stringIndexInitCorpus.ToString() + " "
-				+ stringIndexEndCorpus.ToString());
-			*/
-			
 			String conditionSend = Command.Substring (stringIndexInitCondition, stringIndexEndCondition - stringIndexInitCondition);
 			String corpusSend = Command.Substring (stringIndexInitCorpus, stringIndexEndCorpus - stringIndexInitCorpus);
 			whileInterpreter (conditionSend, corpusSend);
@@ -102,85 +118,20 @@ public class PlattaformTest : MonoBehaviour
 		Terminal.SetActive (false);
 		playerScript.TerminalOn = false;
 	}
-
+		
 	void whileInterpreter(String condition, String corpus)
 	{
 		WhileForm whileObj = new WhileForm ();
+		whileObj.Corpus = corpus;
 		//Debug.Log ("Condição: " + condition);
 		if (condition.StartsWith ("true")) 
 		{
-			if (corpus.StartsWith ("move")) 
-			{
-				int stringIndexInitParam1 = 0;
-				int stringIndexEndParam1 = 0;
-				int stringIndexEndParam2 = 0;
-
-
-				bool find1Param = true;
-				bool find2Param = false;
-
-				for (int i = 0; i < corpus.Length; i++) 
-				{
-					if (find1Param) 
-					{
-						if (corpus [i].Equals ('(')) 
-						{
-							stringIndexInitParam1 = i+1;
-							//find1Param = false;
-							//find2Param = true;
-							continue;
-						}
-						if (corpus [i].Equals (',')) 
-						{
-							stringIndexEndParam1 = i;
-							find1Param = false;
-							find2Param = true;
-							continue;
-						}
-					}
-					else if(find2Param)
-					{
-						if (corpus [i].Equals (')')) 
-						{
-							stringIndexEndParam2 = i-1;
-							find1Param = true;
-							find2Param = false;
-							break;
-						}
-					}
-				}
-				String firstParam = corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1);
-				String secondParam = corpus.Substring (stringIndexEndParam1 + 1, stringIndexEndParam2 - stringIndexEndParam1);
-				// Debug.Log ("1param: " + corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1));
-				// Debug.Log ("2param: " + corpus.Substring (stringIndexEndParam1+1, stringIndexEndParam2 - stringIndexEndParam1));
-
-				MOVE_speed = float.Parse(secondParam);
-
-				//Debug.Log (firstParam);
-				switch (firstParam) 
-				{
-				case "left":	
-					Debug.Log ("enter in case");
-					MOVE_direction = Direction.LEFT;
-					InvokeRepeating ("command_move", 0, 0.05f);
-					break;
-				case "right":
-					MOVE_direction = Direction.RIGHT;
-					InvokeRepeating ("command_move", 0, 0.05f);
-					break;
-				case "up":
-					MOVE_direction = Direction.UP;
-					InvokeRepeating ("command_move", 0, 0.05f);
-					break;
-				case "down":
-					MOVE_direction = Direction.DOWN;
-					InvokeRepeating ("command_move", 0, 0.05f);
-					break;
-				}
-			}
+			Expression whileTrueExpression = new Expression();
+			whileTrueExpression.condition = Expression.ConditionOperator.TRUE;
+			whileObj.mainExpression = whileTrueExpression;
 		}
 		else 
-		{
+		{			
 			bool conditionTest = false;
 			string arg1Send = "";
 			string arg2Send = ""; 
@@ -207,8 +158,7 @@ public class PlattaformTest : MonoBehaviour
 						{
 							operatorSend = ConditionOperator.LessThanEquals;
 						}
-						break;
-					
+						break;					
 					}
 					else 
 					{
@@ -227,10 +177,9 @@ public class PlattaformTest : MonoBehaviour
 						}
 						break;
 					}
-
 				}
 			}
-			conditionTest = conditonInterpreter (arg1Send, arg2Send, operatorSend);
+			conditonInterpreter (arg1Send, arg2Send, operatorSend, whileObj);
 			//conditionTest 
 			//Debug.Log("Condição: " +conditionTest);
 			//Interp the condition
@@ -238,57 +187,64 @@ public class PlattaformTest : MonoBehaviour
 	}
 
 
-	void whileAct()
+	void whileAct(WhileForm whileCommand)
 	{
+		
+		if (expressionCheck (whileCommand.mainExpression)) 
+		{
+			Queue<Command> Executed = new Queue<Command> ();
+			while (whileCommand.commands.Count > 0) 
+			{
+				Command next = whileCommand.commands.Dequeue ();
+				Executed.Enqueue (next);
+				switch (next.name) {
+				case "MOVE":				
+					object firstParam = next.commandParams.Dequeue();
+					object secondParam = next.commandParams.Dequeue();
+					command_move ((firstParam as string), float.Parse((secondParam as string)));
+					next.commandParams.Enqueue (firstParam);
+					next.commandParams.Enqueue (secondParam);
+					break;
+				}
+			}
+			whileCommand.commands = Executed;
+
+		}
 	}
 
 
-	bool conditonInterpreter(String arg1, String arg2, ConditionOperator operator1 )
+	void conditonInterpreter(String arg1, String arg2, ConditionOperator operator1 , WhileForm whileObj)
 	{
+		Expression whileNormalExpression = new Expression();
+
 		arg1 = Clean(arg1);
 		arg2 = Clean(arg2);
 
 		int argInt1 = Int32.Parse (arg1);
 		int argInt2 = Int32.Parse (arg2);
 
-		bool conditionSolved = false;
 		//Debug.Log("condition tested: " +argInt1 +" " +operator1 +" " +argInt2);
 		switch(operator1)
 		{
 			case ConditionOperator.LessThan:
-				if (argInt1 < argInt2) 
-				{
-					conditionSolved = true;
-				}
+				whileNormalExpression.condition = Expression.ConditionOperator.LessThan;				
 				break;
 			case ConditionOperator.LessThanEquals:
-				if (argInt1 <= argInt2) 
-				{
-					conditionSolved = true;
-				}
+				whileNormalExpression.condition = Expression.ConditionOperator.LessThanEquals;
 				break;
 			case ConditionOperator.MoreThan:
-				if (argInt1 > argInt2) 
-				{
-					conditionSolved = true;
-				}
+				whileNormalExpression.condition = Expression.ConditionOperator.LessThan;
 				break;
 			case ConditionOperator.MoreThanEquals:
-				if (argInt1 >= argInt2) 
-				{
-					conditionSolved = true;
-				}
+				whileNormalExpression.condition = Expression.ConditionOperator.LessThan;
 				break;
 		}
-
-		//Debug.Log ("Condition arg1: " +arg1);
-		//Debug.Log ("Condition arg1: " +arg2);
-		//Debug.Log ("Condition Operator: " +operator1);
-		return conditionSolved;
+		whileObj.mainExpression = whileNormalExpression;
+		corpusInterpreter (whileObj.Corpus, whileObj);
 	}
 
 
-	void command_move()
+	void command_move(string direction, float moveSpeed)
 	{
 		//Debug.Log ("enter in comannd move");
 		if (MOVE_direction == Direction.LEFT) 
@@ -318,5 +274,257 @@ public class PlattaformTest : MonoBehaviour
 	}
 	// while(true){move(left, 1)}
 	// while(12 > 1){move(left, 1)}
+
+	bool expressionCheck(Expression toCheck)
+	{
+		float Number1 = 0;
+		float Number2 = 0;
+		bool elseReturn = false;
+		switch (toCheck.condition) 
+		{
+			case Expression.ConditionOperator.Different:
+				switch (toCheck.firstArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number1 = toCheck.firstArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+					}
+				switch (toCheck.secondArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number2 = toCheck.secondArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				if(Number1 != Number2)
+				{
+					return true;
+				}
+				break;
+			case Expression.ConditionOperator.Equals:
+				switch (toCheck.firstArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number1 = toCheck.firstArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				switch (toCheck.secondArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number2 = toCheck.secondArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				if(Number1 == Number2)
+				{
+					return true;
+				}
+				break;
+			case Expression.ConditionOperator.TRUE:
+				return true;
+				break;
+			case Expression.ConditionOperator.FALSE:
+				break;
+			case Expression.ConditionOperator.LessThan:
+				switch (toCheck.firstArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number1 = toCheck.firstArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				switch (toCheck.secondArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number2 = toCheck.secondArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				if(Number1 < Number2)
+				{
+					return true;
+				}
+				break;
+			case Expression.ConditionOperator.LessThanEquals:
+				switch (toCheck.firstArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number1 = toCheck.firstArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				switch (toCheck.secondArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number2 = toCheck.secondArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				if(Number1 <= Number2)
+				{
+					return true;
+				}
+				break;
+			case Expression.ConditionOperator.MoreThan:
+				switch (toCheck.firstArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number1 = toCheck.firstArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				switch (toCheck.secondArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number2 = toCheck.secondArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				if(Number1 > Number2)
+				{
+					return true;
+				}
+				break;
+			case Expression.ConditionOperator.MoreThanEquals:
+				switch (toCheck.firstArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number1 = toCheck.firstArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				switch (toCheck.secondArgument.type) 
+				{
+					case Argument.types.NUMBER:
+						Number2 = toCheck.secondArgument.numberValue;
+						break;
+					case Argument.types.VARIABLE:
+						//not yet
+						break;
+					case Argument.types.OPERATION:
+						//not yet
+						break;
+				}
+				if(Number1 >= Number2)
+				{
+					return true;
+				}
+				break;
+		}
+		return elseReturn;
+	}
+
+
+	void corpusInterpreter(string corpus, WhileForm whileObj)
+	{
+		if (corpus.StartsWith ("move")) 
+		{
+			int stringIndexInitParam1 = 0;
+			int stringIndexEndParam1 = 0;
+			int stringIndexEndParam2 = 0;
+
+
+			bool find1Param = true;
+			bool find2Param = false;
+
+			for (int i = 0; i < corpus.Length; i++) 
+			{
+				if (find1Param) 
+				{
+					if (corpus [i].Equals ('(')) 
+					{
+						stringIndexInitParam1 = i+1;
+						//find1Param = false;
+						//find2Param = true;
+						continue;
+					}
+					if (corpus [i].Equals (',')) 
+					{
+						stringIndexEndParam1 = i;
+						find1Param = false;
+						find2Param = true;
+						continue;
+					}
+				}
+				else if(find2Param)
+				{
+					if (corpus [i].Equals (')')) 
+					{
+						stringIndexEndParam2 = i-1;
+						find1Param = true;
+						find2Param = false;
+						break;
+					}
+				}
+			}
+			String firstParam = corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1);
+			String secondParam = corpus.Substring (stringIndexEndParam1 + 1, stringIndexEndParam2 - stringIndexEndParam1);
+			// Debug.Log ("1param: " + corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1));
+			// Debug.Log ("2param: " + corpus.Substring (stringIndexEndParam1+1, stringIndexEndParam2 - stringIndexEndParam1));
+			Command moveCommand = new Command();
+			moveCommand.name = "MOVE";
+			moveCommand.commandParams.Enqueue (firstParam);
+			moveCommand.commandParams.Enqueue (secondParam);
+			whileObj.commands.Enqueue (moveCommand);
+		}
+		pipeline.Enqueue (whileObj);
+	}
 
 }
