@@ -11,7 +11,7 @@ public class PlattaformTest : MonoBehaviour
 	public GameObject Terminal;
 	public player playerScript;
 	public enum Direction{LEFT, RIGHT, UP, DOWN}
-
+	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals}
 	public Direction MOVE_direction;
 	public float MOVE_speed;
 
@@ -25,18 +25,15 @@ public class PlattaformTest : MonoBehaviour
 	{
 		String Command = Terminal.gameObject.GetComponentInChildren<Text>().text;
 
-		Debug.Log (Command);
+		Debug.Log ("Command: " +Command);
 
 		//Command = cleaner (Command);
+		Command = Clean(Command);
 
-		Command = Command.Replace (" ", "");
-		Command = Command.Replace ("\n", "");
-		Command = Command.Replace ("\t", "");
-
-		Debug.Log (Command);
+		Debug.Log ("Command after clean: " +Command);
 
 		if (Command.StartsWith ("while")) 
-		{			
+		{						
 			int stringIndexInitCondition = 0;
 			int stringIndexEndCondition = 0;
 			int stringIndexInitCorpus = 0;
@@ -108,6 +105,8 @@ public class PlattaformTest : MonoBehaviour
 
 	void whileInterpreter(String condition, String corpus)
 	{
+		WhileForm whileObj = new WhileForm ();
+		//Debug.Log ("Condição: " + condition);
 		if (condition.StartsWith ("true")) 
 		{
 			if (corpus.StartsWith ("move")) 
@@ -157,7 +156,7 @@ public class PlattaformTest : MonoBehaviour
 
 				MOVE_speed = float.Parse(secondParam);
 
-				Debug.Log (firstParam);
+				//Debug.Log (firstParam);
 				switch (firstParam) 
 				{
 				case "left":	
@@ -182,16 +181,116 @@ public class PlattaformTest : MonoBehaviour
 		}
 		else 
 		{
+			bool conditionTest = false;
+			string arg1Send = "";
+			string arg2Send = ""; 
+			ConditionOperator operatorSend = ConditionOperator.LessThan;
+			int indexOperator = -99;
+			for(int iterator = 0; iterator < condition.Length; iterator++)
+			{
+				if(condition[iterator].Equals('>') || condition[iterator].Equals('<'))
+				{
+					Debug.Log ("Founded a contitional " +iterator);
+					indexOperator = iterator;
+					if (condition [iterator + 1].Equals ('=')) 
+					{						
+						//Debug.Log ("firs Substring: 0 - " +indexOperator);
+						//Debug.Log ("second Substring: " +(indexOperator+2) +" - " +(condition.Length - indexOperator+2));
+						//Debug.Log(condition.Length + " \\ " +indexOperator);
+						arg1Send = condition.Substring (0, indexOperator);
+						arg2Send = condition.Substring ((indexOperator+2), (condition.Length - (indexOperator+2)));
+						if (condition [iterator].Equals ('>')) 
+						{
+							operatorSend = ConditionOperator.MoreThanEquals;
+						} 
+						else
+						{
+							operatorSend = ConditionOperator.LessThanEquals;
+						}
+						break;
+					
+					}
+					else 
+					{
+						//Debug.Log ("firs Substring: 0 - " +indexOperator);
+						//Debug.Log ("second Substring: " +(indexOperator+1) +" - " +(condition.Length - indexOperator+1));
+						//Debug.Log(condition.Length + " \\ " +indexOperator);
+						arg1Send = condition.Substring (0, indexOperator);
+						arg2Send = condition.Substring ((indexOperator+1), (condition.Length - (indexOperator+1)));
+						if (condition [iterator].Equals ('>')) 
+						{
+							operatorSend = ConditionOperator.MoreThan;
+						} 
+						else
+						{
+							operatorSend = ConditionOperator.LessThan;
+						}
+						break;
+					}
+
+				}
+			}
+			conditionTest = conditonInterpreter (arg1Send, arg2Send, operatorSend);
+			//conditionTest 
+			//Debug.Log("Condição: " +conditionTest);
 			//Interp the condition
-		}
-	
-
-
+		}	
 	}
+
+
+	void whileAct()
+	{
+	}
+
+
+	bool conditonInterpreter(String arg1, String arg2, ConditionOperator operator1 )
+	{
+		arg1 = Clean(arg1);
+		arg2 = Clean(arg2);
+
+		int argInt1 = Int32.Parse (arg1);
+		int argInt2 = Int32.Parse (arg2);
+
+		bool conditionSolved = false;
+		//Debug.Log("condition tested: " +argInt1 +" " +operator1 +" " +argInt2);
+		switch(operator1)
+		{
+			case ConditionOperator.LessThan:
+				if (argInt1 < argInt2) 
+				{
+					conditionSolved = true;
+				}
+				break;
+			case ConditionOperator.LessThanEquals:
+				if (argInt1 <= argInt2) 
+				{
+					conditionSolved = true;
+				}
+				break;
+			case ConditionOperator.MoreThan:
+				if (argInt1 > argInt2) 
+				{
+					conditionSolved = true;
+				}
+				break;
+			case ConditionOperator.MoreThanEquals:
+				if (argInt1 >= argInt2) 
+				{
+					conditionSolved = true;
+				}
+				break;
+		}
+
+		//Debug.Log ("Condition arg1: " +arg1);
+		//Debug.Log ("Condition arg1: " +arg2);
+		//Debug.Log ("Condition Operator: " +operator1);
+		return conditionSolved;
+	}
+
 
 	void command_move()
 	{
-		Debug.Log ("enter in comannd move");
+		//Debug.Log ("enter in comannd move");
 		if (MOVE_direction == Direction.LEFT) 
 		{
 			transform.Translate (Vector2.left * MOVE_speed * Time.deltaTime);
@@ -210,6 +309,14 @@ public class PlattaformTest : MonoBehaviour
 		}			
 	}
 
+	string Clean(string enter)
+	{		
+		enter = enter.Replace (" ", "");
+		enter = enter.Replace ("\n", "");
+		enter = enter.Replace ("\t", "");
+		return enter;
+	}
 	// while(true){move(left, 1)}
+	// while(12 > 1){move(left, 1)}
 
 }
