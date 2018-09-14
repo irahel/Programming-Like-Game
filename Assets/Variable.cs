@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Variable : MonoBehaviour 
+public class Variable
 {
 	public string name;
 

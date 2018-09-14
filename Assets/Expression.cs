@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Expression : MonoBehaviour 
+public class Expression
 {
 	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals, Equals, Different, TRUE, FALSE, NONE}
 	public ConditionOperator condition;
@@ -11,7 +11,7 @@ public class Expression : MonoBehaviour
 	public Argument secondArgument;
 
 
-	public Expression ()
+	public void initiate ()
 	{
 		condition = ConditionOperator.NONE;
 		firstArgument = new Argument ();

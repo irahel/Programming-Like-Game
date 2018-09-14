@@ -11,7 +11,7 @@ public class PlattaformTest : MonoBehaviour
 	public GameObject Terminal;
 	public player playerScript;
 	public enum Direction{LEFT, RIGHT, UP, DOWN}
-	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals}
+	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals, Equals}
 	public Direction MOVE_direction;
 	public float MOVE_speed;
 	public Queue pipeline;
@@ -23,7 +23,7 @@ public class PlattaformTest : MonoBehaviour
 
 	void Update () 
 	{
-		Debug.Log (pipeline.Count);
+		Debug.Log ("pipe lenght " +pipeline.Count);
 		Queue executedPipeline = new Queue ();
 		while(pipeline.Count > 0)
 		{
@@ -31,6 +31,7 @@ public class PlattaformTest : MonoBehaviour
 			executedPipeline.Enqueue (task);
 			//Need reform
 			WhileForm whileCommand = (task as WhileForm);
+			//Debug.Log ("corpus: "+whileCommand.Corpus);
 			whileAct (whileCommand);
 		}
 		pipeline = executedPipeline;
@@ -122,24 +123,29 @@ public class PlattaformTest : MonoBehaviour
 	void whileInterpreter(String condition, String corpus)
 	{
 		WhileForm whileObj = new WhileForm ();
+		whileObj.initiate ();
+
 		whileObj.Corpus = corpus;
 		//Debug.Log ("Condição: " + condition);
 		if (condition.StartsWith ("true")) 
 		{
-			Expression whileTrueExpression = new Expression();
+			Expression whileTrueExpression = new Expression ();
+			whileTrueExpression.initiate ();
+
 			whileTrueExpression.condition = Expression.ConditionOperator.TRUE;
 			whileObj.mainExpression = whileTrueExpression;
+
+			corpusInterpreter (whileObj.Corpus, whileObj);
 		}
 		else 
-		{			
-			bool conditionTest = false;
+		{						
 			string arg1Send = "";
 			string arg2Send = ""; 
 			ConditionOperator operatorSend = ConditionOperator.LessThan;
 			int indexOperator = -99;
 			for(int iterator = 0; iterator < condition.Length; iterator++)
 			{
-				if(condition[iterator].Equals('>') || condition[iterator].Equals('<'))
+				if(condition[iterator].Equals('>') || condition[iterator].Equals('<') || condition[iterator].Equals('='))
 				{
 					Debug.Log ("Founded a contitional " +iterator);
 					indexOperator = iterator;
@@ -154,6 +160,10 @@ public class PlattaformTest : MonoBehaviour
 						{
 							operatorSend = ConditionOperator.MoreThanEquals;
 						} 
+						else if (condition [iterator].Equals ('=')) 
+						{
+							operatorSend = ConditionOperator.Equals;
+						}
 						else
 						{
 							operatorSend = ConditionOperator.LessThanEquals;
@@ -189,18 +199,26 @@ public class PlattaformTest : MonoBehaviour
 
 	void whileAct(WhileForm whileCommand)
 	{
-		
+
+		Debug.Log ("enter in act");
+		Debug.Log (whileCommand.mainExpression.firstArgument.numberValue + "  " + whileCommand.mainExpression.condition + "  " + whileCommand.mainExpression.secondArgument.numberValue);
 		if (expressionCheck (whileCommand.mainExpression)) 
 		{
+			Debug.Log ("enter in exp");
 			Queue<Command> Executed = new Queue<Command> ();
 			while (whileCommand.commands.Count > 0) 
 			{
+				//Debug.Log ("enter in commands " +whileCommand.commands.Count);
 				Command next = whileCommand.commands.Dequeue ();
+				//Debug.Log ("enter in commands " +whileCommand.commands.Count);
 				Executed.Enqueue (next);
+				Debug.Log ("named " +next.name);
 				switch (next.name) {
-				case "MOVE":				
-					object firstParam = next.commandParams.Dequeue();
-					object secondParam = next.commandParams.Dequeue();
+				case "MOVE":
+					Debug.Log ("enter here case");
+					object firstParam = next.commandParams.Dequeue ();
+					object secondParam = next.commandParams.Dequeue ();
+					Debug.Log ("commands  :" +firstParam + "  "  +secondParam);
 					command_move ((firstParam as string), float.Parse((secondParam as string)));
 					next.commandParams.Enqueue (firstParam);
 					next.commandParams.Enqueue (secondParam);
@@ -213,15 +231,16 @@ public class PlattaformTest : MonoBehaviour
 	}
 
 
-	void conditonInterpreter(String arg1, String arg2, ConditionOperator operator1 , WhileForm whileObj)
+	void conditonInterpreter( String arg1, String arg2, ConditionOperator operator1 , WhileForm whileObj)
 	{
-		Expression whileNormalExpression = new Expression();
+		Expression whileNormalExpression = new Expression ();
+		whileNormalExpression.initiate ();
 
-		arg1 = Clean(arg1);
-		arg2 = Clean(arg2);
+		whileNormalExpression.firstArgument.type = Argument.types.NUMBER;
+		whileNormalExpression.secondArgument.type = Argument.types.NUMBER;
 
-		int argInt1 = Int32.Parse (arg1);
-		int argInt2 = Int32.Parse (arg2);
+		whileNormalExpression.firstArgument.numberValue = Int32.Parse (Clean(arg1));
+		whileNormalExpression.secondArgument.numberValue = Int32.Parse (Clean(arg2));
 
 		//Debug.Log("condition tested: " +argInt1 +" " +operator1 +" " +argInt2);
 		switch(operator1)
@@ -233,11 +252,14 @@ public class PlattaformTest : MonoBehaviour
 				whileNormalExpression.condition = Expression.ConditionOperator.LessThanEquals;
 				break;
 			case ConditionOperator.MoreThan:
-				whileNormalExpression.condition = Expression.ConditionOperator.LessThan;
+				whileNormalExpression.condition = Expression.ConditionOperator.MoreThan;
 				break;
 			case ConditionOperator.MoreThanEquals:
-				whileNormalExpression.condition = Expression.ConditionOperator.LessThan;
+				whileNormalExpression.condition = Expression.ConditionOperator.MoreThanEquals;
 				break;
+			case ConditionOperator.Equals:
+				whileNormalExpression.condition = Expression.ConditionOperator.Equals;
+			break;
 		}
 		whileObj.mainExpression = whileNormalExpression;
 		corpusInterpreter (whileObj.Corpus, whileObj);
@@ -246,22 +268,27 @@ public class PlattaformTest : MonoBehaviour
 
 	void command_move(string direction, float moveSpeed)
 	{
-		//Debug.Log ("enter in comannd move");
-		if (MOVE_direction == Direction.LEFT) 
+		//moveSpeed = moveSpeed * 10000;
+		Debug.Log ("enter in comannd move");
+		if (direction == "left") 
 		{
-			transform.Translate (Vector2.left * MOVE_speed * Time.deltaTime);
+			transform.Translate (Vector2.left * moveSpeed * Time.deltaTime);
+			Debug.Log ("moving left");
 		}
-		else if (MOVE_direction == Direction.RIGHT) 
+		else if (direction == "right") 
 		{
-			transform.Translate (Vector2.right * MOVE_speed * Time.deltaTime);
+			transform.Translate (Vector2.right * moveSpeed * Time.deltaTime);
+			Debug.Log ("moving right");
 		}
-		else if (MOVE_direction == Direction.UP) 
+		else if (direction == "up") 
 		{
-			transform.Translate (Vector2.up * MOVE_speed * Time.deltaTime);
+			transform.Translate (Vector2.up * moveSpeed * Time.deltaTime);
+			Debug.Log ("moving up");
 		}
 		else
 		{
-			transform.Translate (Vector2.down * MOVE_speed * Time.deltaTime);
+			transform.Translate (Vector2.down * moveSpeed * Time.deltaTime);
+			Debug.Log ("moving down");
 		}			
 	}
 
@@ -344,7 +371,6 @@ public class PlattaformTest : MonoBehaviour
 				break;
 			case Expression.ConditionOperator.TRUE:
 				return true;
-				break;
 			case Expression.ConditionOperator.FALSE:
 				break;
 			case Expression.ConditionOperator.LessThan:
@@ -474,56 +500,69 @@ public class PlattaformTest : MonoBehaviour
 
 	void corpusInterpreter(string corpus, WhileForm whileObj)
 	{
-		if (corpus.StartsWith ("move")) 
+		
+		ArrayList commands = new ArrayList(corpus.Split(';'));
+		Debug.Log ("corpus :" + corpus);
+
+		foreach( string item in commands)
 		{
-			int stringIndexInitParam1 = 0;
-			int stringIndexEndParam1 = 0;
-			int stringIndexEndParam2 = 0;
-
-
-			bool find1Param = true;
-			bool find2Param = false;
-
-			for (int i = 0; i < corpus.Length; i++) 
+			Debug.Log ("corpus parted :" + item);
+			if (item.StartsWith ("move")) 
 			{
-				if (find1Param) 
+				int stringIndexInitParam1 = 0;
+				int stringIndexEndParam1 = 0;
+				int stringIndexEndParam2 = 0;
+
+
+				bool find1Param = true;
+				bool find2Param = false;
+
+				for (int i = 0; i < item.Length; i++) 
 				{
-					if (corpus [i].Equals ('(')) 
+					if (find1Param) 
 					{
-						stringIndexInitParam1 = i+1;
-						//find1Param = false;
-						//find2Param = true;
-						continue;
+						if (item [i].Equals ('(')) 
+						{
+							stringIndexInitParam1 = i+1;
+							//find1Param = false;
+							//find2Param = true;
+							continue;
+						}
+						if (item [i].Equals (',')) 
+						{
+							stringIndexEndParam1 = i;
+							find1Param = false;
+							find2Param = true;
+							continue;
+						}
 					}
-					if (corpus [i].Equals (',')) 
+					else if(find2Param)
 					{
-						stringIndexEndParam1 = i;
-						find1Param = false;
-						find2Param = true;
-						continue;
+						if (item [i].Equals (')')) 
+						{
+							stringIndexEndParam2 = i-1;
+							find1Param = true;
+							find2Param = false;
+							break;
+						}
 					}
 				}
-				else if(find2Param)
-				{
-					if (corpus [i].Equals (')')) 
-					{
-						stringIndexEndParam2 = i-1;
-						find1Param = true;
-						find2Param = false;
-						break;
-					}
-				}
+				String firstParam = item.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1);
+				String secondParam = item.Substring (stringIndexEndParam1 + 1, stringIndexEndParam2 - stringIndexEndParam1);
+				// Debug.Log ("1param: " + corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1));
+				// Debug.Log ("2param: " + corpus.Substring (stringIndexEndParam1+1, stringIndexEndParam2 - stringIndexEndParam1));
+				Command moveCommand = new Command();
+				moveCommand.initiate ();
+
+				moveCommand.name = "MOVE";
+				moveCommand.commandParams.Enqueue (firstParam);
+				moveCommand.commandParams.Enqueue (secondParam);
+				whileObj.commands.Enqueue (moveCommand);
 			}
-			String firstParam = corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1);
-			String secondParam = corpus.Substring (stringIndexEndParam1 + 1, stringIndexEndParam2 - stringIndexEndParam1);
-			// Debug.Log ("1param: " + corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1));
-			// Debug.Log ("2param: " + corpus.Substring (stringIndexEndParam1+1, stringIndexEndParam2 - stringIndexEndParam1));
-			Command moveCommand = new Command();
-			moveCommand.name = "MOVE";
-			moveCommand.commandParams.Enqueue (firstParam);
-			moveCommand.commandParams.Enqueue (secondParam);
-			whileObj.commands.Enqueue (moveCommand);
 		}
+
+
+
 		pipeline.Enqueue (whileObj);
 	}
 

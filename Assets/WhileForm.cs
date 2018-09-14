@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WhileForm : MonoBehaviour 
+public class WhileForm
 {
 
 	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals, Equals, Different}
@@ -11,10 +11,10 @@ public class WhileForm : MonoBehaviour
 	public string Corpus;
 	public Queue<Command> commands;
 
-	public WhileForm ()
+	public void initiate ()
 	{
 		mainExpression = new Expression ();
-		Corpus = "";
+		Corpus = "da certo ai ";
 		commands = new Queue<Command> ();
 	}
 

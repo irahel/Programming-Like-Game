@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Argument : MonoBehaviour 
+public class Argument
 {
 	public enum types{VARIABLE, NUMBER, EXPRESSION, OPERATION, NONE}
 	public types type;

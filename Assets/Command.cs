@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Command : MonoBehaviour 
+public class Command
 {
 	public string name;
 	public Queue commandParams;
 
-	public Command ()
+	public void initiate ()
 	{
 		name = "";
 		commandParams = new Queue();
