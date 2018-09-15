@@ -302,199 +302,163 @@ public class PlattaformTest : MonoBehaviour
 	// while(true){move(left, 1)}
 	// while(12 > 1){move(left, 1)}
 
-	bool expressionCheck(Expression toCheck)
+	float solveOperation(Operation toSolve)
 	{
 		float Number1 = 0;
 		float Number2 = 0;
-		bool elseReturn = false;
+		//solve number 1
+		switch (toSolve.type_argumment_1) 
+		{
+			case Operation.types.NUMBER:
+				Number1 = toSolve.number_value_1;
+				break;
+			case Operation.types.VARIABLE:
+				switch (toSolve.variable_value_1.type) {
+				case Variable.types.FLOAT:
+					Number1 = toSolve.variable_value_1.floatValue;
+					break;
+				case Variable.types.INT:
+					Number1 = toSolve.variable_value_1.intValue;
+					break;
+				case Variable.types.BOOL:
+					//error
+					break;
+				}
+				break;
+			case Operation.types.OPERATION:
+				Number1 = solveOperation (toSolve.operation_value_1);
+				break;
+		}
+		//solve number 2
+		switch (toSolve.type_argumment_2) 
+		{
+			case Operation.types.NUMBER:
+				Number2 = toSolve.number_value_2;
+				break;
+			case Operation.types.VARIABLE:
+				switch (toSolve.variable_value_2.type) {
+				case Variable.types.FLOAT:
+					Number2 = toSolve.variable_value_2.floatValue;
+					break;
+				case Variable.types.INT:
+					Number2 = toSolve.variable_value_2.intValue;
+					break;
+				case Variable.types.BOOL:
+					//error
+					break;
+				}
+				break;
+			case Operation.types.OPERATION:
+				Number2 = solveOperation (toSolve.operation_value_2);
+				break;
+		}		
+		//solve operation
+		switch (toSolve.operator_) 
+		{
+			case Operation.Operators.PLUS:			
+				return Number1 + Number2;
+			case Operation.Operators.MINUS:
+				return Number1 - Number2;				
+			case Operation.Operators.MULT:
+				return Number1 * Number2;				
+			case Operation.Operators.DIV:
+				return Number1 / Number2;				
+			default:
+			//implement error here
+				return 0;
+		}
+	}
+
+	bool expressionCheck(Expression toCheck)
+	{
+		float f_Item1 = 0;
+		float f_Item2 = 0;
+
+		bool b_Item1 = false;
+		bool b_Item2 = false;
+
+		//solve item 1
+		switch (toCheck.firstArgument.type) 
+		{
+			case Argument.types.NUMBER:
+				f_Item1 = toCheck.firstArgument.numberValue;
+				break;
+			case Argument.types.VARIABLE:
+				switch (toCheck.firstArgument.variableValue.type) 
+				{
+				case Variable.types.FLOAT:
+					f_Item1 = toCheck.firstArgument.variableValue.floatValue;
+					break;
+				case Variable.types.INT:
+					f_Item1 = toCheck.firstArgument.variableValue.intValue;
+					break;
+				case Variable.types.BOOL:
+					b_Item1 = toCheck.firstArgument.variableValue.boolValue;
+					break;
+				}
+				break;
+			case Argument.types.OPERATION:
+				f_Item1 = solveOperation (toCheck.firstArgument.operationValue);
+				break;
+			case Argument.types.EXPRESSION:
+				b_Item1 = expressionCheck (toCheck.firstArgument.expressionValue);
+				break;
+		}
+		//solve item 2
+		switch (toCheck.secondArgument.type) 
+		{
+			case Argument.types.NUMBER:
+				f_Item2 = toCheck.secondArgument.numberValue;
+				break;
+			case Argument.types.VARIABLE:
+				switch (toCheck.secondArgument.variableValue.type) 
+					{
+					case Variable.types.FLOAT:
+						f_Item2 = toCheck.secondArgument.variableValue.floatValue;
+						break;
+					case Variable.types.INT:
+						f_Item2 = toCheck.secondArgument.variableValue.intValue;
+						break;
+					case Variable.types.BOOL:
+						b_Item2 = toCheck.secondArgument.variableValue.boolValue;
+						break;
+				}
+				break;
+			case Argument.types.OPERATION:
+				f_Item2 = solveOperation (toCheck.secondArgument.operationValue);
+				break;
+			case Argument.types.EXPRESSION:
+				b_Item2 = expressionCheck (toCheck.secondArgument.expressionValue);
+				break;
+		}
+
+		 //solve final condition
 		switch (toCheck.condition) 
 		{
 			case Expression.ConditionOperator.Different:
-				switch (toCheck.firstArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number1 = toCheck.firstArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-					}
-				switch (toCheck.secondArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number2 = toCheck.secondArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				if(Number1 != Number2)
-				{
-					return true;
-				}
-				break;
+				return f_Item1 != f_Item2;								
 			case Expression.ConditionOperator.Equals:
-				switch (toCheck.firstArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number1 = toCheck.firstArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				switch (toCheck.secondArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number2 = toCheck.secondArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				if(Number1 == Number2)
-				{
-					return true;
-				}
-				break;
+				return f_Item1 != f_Item2;	
 			case Expression.ConditionOperator.TRUE:
 				return true;
 			case Expression.ConditionOperator.FALSE:
-				break;
+				return false;
 			case Expression.ConditionOperator.LessThan:
-				switch (toCheck.firstArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number1 = toCheck.firstArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				switch (toCheck.secondArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number2 = toCheck.secondArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				if(Number1 < Number2)
-				{
-					return true;
-				}
-				break;
+				return f_Item1 < f_Item2;					
 			case Expression.ConditionOperator.LessThanEquals:
-				switch (toCheck.firstArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number1 = toCheck.firstArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				switch (toCheck.secondArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number2 = toCheck.secondArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				if(Number1 <= Number2)
-				{
-					return true;
-				}
-				break;
+				return f_Item1 <= f_Item2;
 			case Expression.ConditionOperator.MoreThan:
-				switch (toCheck.firstArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number1 = toCheck.firstArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				switch (toCheck.secondArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number2 = toCheck.secondArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				if(Number1 > Number2)
-				{
-					return true;
-				}
-				break;
+				return f_Item1 > f_Item2;
 			case Expression.ConditionOperator.MoreThanEquals:
-				switch (toCheck.firstArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number1 = toCheck.firstArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				switch (toCheck.secondArgument.type) 
-				{
-					case Argument.types.NUMBER:
-						Number2 = toCheck.secondArgument.numberValue;
-						break;
-					case Argument.types.VARIABLE:
-						//not yet
-						break;
-					case Argument.types.OPERATION:
-						//not yet
-						break;
-				}
-				if(Number1 >= Number2)
-				{
-					return true;
-				}
-				break;
+				return f_Item1 >= f_Item2;
+			case Expression.ConditionOperator.And:
+				return b_Item1 && b_Item2;
+			case Expression.ConditionOperator.Or:
+				return b_Item1 || b_Item2;
+			default:
+			//implement error here
+				return false;
 		}
-		return elseReturn;
 	}
 
 

@@ -9,7 +9,8 @@ public class Argument
 
 	public Variable variableValue;
 	public float numberValue;
-	public Expression argumentValue;
+	public Expression expressionValue;
+	public Operation operationValue;
 
 	public Argument ()
 	{

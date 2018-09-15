@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Expression
 {
-	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals, Equals, Different, TRUE, FALSE, NONE}
+	public enum ConditionOperator{MoreThan, LessThan, MoreThanEquals, LessThanEquals, Equals, Different, And, Or, TRUE, FALSE, NONE}
 	public ConditionOperator condition;
 
 	public Argument firstArgument;

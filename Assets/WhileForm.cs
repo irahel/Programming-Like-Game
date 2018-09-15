@@ -14,7 +14,7 @@ public class WhileForm
 	public void initiate ()
 	{
 		mainExpression = new Expression ();
-		Corpus = "da certo ai ";
+		Corpus = "";
 		commands = new Queue<Command> ();
 	}
 

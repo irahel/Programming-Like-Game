@@ -7,7 +7,7 @@ public class player : MonoBehaviour
 
 	public float speed, jumpForce;
 	public bool canJump;
-	private int jumpCounter, chao_state;
+	private int jumpCounter;
 	public Transform floorVerify;
 
 	public bool TerminalOn;
@@ -52,7 +52,6 @@ public class player : MonoBehaviour
 	{
 		//Define if the character can jump, if the character is touching the floor
 		canJump = Physics2D.Linecast(transform.position, floorVerify.position, 1 << LayerMask.NameToLayer("Floor"));
-		chao_state = 1;
 		//Send a bool to animator, referents at if character is touching the floor, for the jump animation
 		//print(canJump);
 		//anim_control.SetBool("canJump", canJump);
