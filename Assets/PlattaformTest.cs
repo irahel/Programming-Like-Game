@@ -23,7 +23,7 @@ public class PlattaformTest : MonoBehaviour
 
 	void Update () 
 	{
-		Debug.Log ("pipe lenght " +pipeline.Count);
+		//Debug.Log ("pipe lenght " +pipeline.Count);
 		Queue executedPipeline = new Queue ();
 		while(pipeline.Count > 0)
 		{
@@ -49,12 +49,12 @@ public class PlattaformTest : MonoBehaviour
 	{
 		String Command = Terminal.gameObject.GetComponentInChildren<Text>().text;
 
-		Debug.Log ("Command: " +Command);
+		//Debug.Log ("Command: " +Command);
 
 		//Command = cleaner (Command);
 		Command = Clean(Command);
 
-		Debug.Log ("Command after clean: " +Command);
+		//Debug.Log ("Command after clean: " +Command);
 
 		if (Command.StartsWith ("while")) 
 		{						
@@ -119,7 +119,198 @@ public class PlattaformTest : MonoBehaviour
 		Terminal.SetActive (false);
 		playerScript.TerminalOn = false;
 	}
-		
+	Expression expressionInterpreter(string condition)
+	{		
+		condition = Clean (condition);
+		Expression finalExpression = new Expression ();
+		Debug.Log ("condition: " +condition);
+
+		if (condition.Contains ('>') || condition.Contains ('<') || condition.Contains ('=') || condition.Contains ('&') || condition.Contains ('|')) 
+		{			
+			Debug.Log ("enter in condition if");
+			char[] reservedKeys = { '>', '<', '=', '!', '&', '|' };
+			int index = condition.IndexOfAny (reservedKeys);
+			int cutIndex = index + 1;
+			switch (condition [index]) {
+			case '>':
+				if (condition [index + 1].Equals ('=')) {
+					finalExpression.condition = Expression.ConditionOperator.MoreThanEquals;
+					cutIndex += 1;
+				} else {
+					finalExpression.condition = Expression.ConditionOperator.MoreThan;
+				}
+				Debug.Log ("Applied condition >");
+				break;
+			case '<':
+				if (condition [index + 1].Equals ('=')) {
+					finalExpression.condition = Expression.ConditionOperator.LessThanEquals;
+					cutIndex += 1;
+				} else {
+					finalExpression.condition = Expression.ConditionOperator.LessThan;
+				}
+				Debug.Log ("Applied condition <");
+				break;
+			case '=':
+				if (condition [index + 1].Equals ('=')) {
+					finalExpression.condition = Expression.ConditionOperator.Equals;
+					cutIndex += 1;
+				} else {						
+					//error
+				}
+				Debug.Log ("Applied condition =");
+				break;
+			case '!':
+				if (condition [index + 1].Equals ('=')) {
+					finalExpression.condition = Expression.ConditionOperator.Different;
+					cutIndex += 1;
+				} else {						
+					//error
+				}
+				Debug.Log ("Applied condition !=");
+				break;
+			case '&':
+				if (condition [index + 1].Equals ('&')) {
+					finalExpression.condition = Expression.ConditionOperator.And;
+					cutIndex += 1;
+				} else {						
+					//error
+				}
+				Debug.Log ("Applied condition &");
+				break;
+			case '|':
+				if (condition [index + 1].Equals ('|')) {
+					finalExpression.condition = Expression.ConditionOperator.Or;
+					cutIndex += 1;
+				} else {						
+					//error
+				}
+				Debug.Log ("Applied condition |");
+				break;
+			}
+			Debug.Log ("first argument string: " +condition.Substring (0, index));
+			Debug.Log ("second argument string: " +condition.Substring (cutIndex, condition.Length - cutIndex));
+			finalExpression.firstArgument = argumentInterpreter (condition.Substring (0, index));
+			finalExpression.secondArgument = argumentInterpreter (condition.Substring (cutIndex, condition.Length - cutIndex));
+
+			//Debug.Log (condition.Substring(0, index));
+			//Debug.Log (condition[index]);
+			//Debug.Log (condition.Substring(index+1, condition.Length - index));
+		} 
+		else if (Clean (condition).Equals ("true")) 
+		{
+			Debug.Log ("enter in true if");
+			finalExpression.condition = Expression.ConditionOperator.TRUE;
+		} 
+		else if (Clean (condition).Equals ("false")) 
+		{
+			Debug.Log ("enter in false if");
+			finalExpression.condition = Expression.ConditionOperator.FALSE;
+		}
+
+		return finalExpression;
+
+	}
+
+	Argument argumentInterpreter(string toSolve)
+	{
+		Argument finalArgument = new Argument ();
+		if (toSolve.Contains ('>') || toSolve.Contains ('<') || toSolve.Contains ('=') || toSolve.Contains ('&') || toSolve.Contains ('|')) 
+		{
+			finalArgument.type = Argument.types.EXPRESSION;
+			finalArgument.expressionValue = expressionInterpreter (toSolve);
+		}
+		else if (toSolve.Contains ('+') || toSolve.Contains ('-') || toSolve.Contains ('*') || toSolve.Contains ('/')) 
+		{
+			finalArgument.type = Argument.types.OPERATION;
+			finalArgument.operationValue = operationInterpreter(toSolve);
+		}
+		else 
+		{
+			//need implement variables
+			finalArgument.type = Argument.types.NUMBER;
+			finalArgument.numberValue = float.Parse(toSolve);
+		}
+		return finalArgument;
+	}
+
+	Operation operationInterpreter(string toSolve)
+	{
+		Operation finalOperation = new Operation ();
+
+		char[] firsPriority = { '*', '/' };
+		char[] secondPriority = { '+', '-'};
+
+		if (toSolve.Contains ('*') || toSolve.Contains ('/')) 
+		{
+			int index = toSolve.IndexOfAny (firsPriority);
+			if (toSolve [index].Equals ('*')) 
+			{
+				finalOperation.operator_ = Operation.Operators.MULT;
+			}
+			else 
+			{
+				finalOperation.operator_ = Operation.Operators.DIV;
+			}
+			//solve argumment 1
+			if (toSolve.Substring (0, index).Contains ('+') || toSolve.Substring (0, index).Contains ('-')) 
+			{
+				finalOperation.type_argumment_1 = Operation.types.OPERATION;
+				finalOperation.operation_value_1 = operationInterpreter (toSolve.Substring (0, index));
+			}
+			else 
+			{
+				//need implement variables
+				finalOperation.type_argumment_1 = Operation.types.NUMBER;
+				finalOperation.number_value_1 = float.Parse (toSolve.Substring (0, index));
+			}
+
+			//solve argumment 2
+			if (toSolve.Substring (index + 1, toSolve.Length - (index+1)).Contains ('+') || toSolve.Substring (index + 1, toSolve.Length - (index+1)).Contains ('-')) 
+			{
+				finalOperation.type_argumment_2 = Operation.types.OPERATION;
+				finalOperation.operation_value_2 = operationInterpreter (toSolve.Substring (index + 1, toSolve.Length - (index+1)));
+			}
+			else 
+			{
+				//need implement variables
+				finalOperation.type_argumment_2 = Operation.types.NUMBER;
+				finalOperation.number_value_2 = float.Parse (toSolve.Substring (index + 1, toSolve.Length - (index+1)));
+			}
+
+		} 
+		else if (toSolve.Contains ('+') || toSolve.Contains ('-')) 
+		{
+			int index = toSolve.IndexOfAny (secondPriority);
+			if (toSolve [index].Equals ('+')) 
+			{
+				finalOperation.operator_ = Operation.Operators.PLUS;
+			}
+			else 
+			{
+				finalOperation.operator_ = Operation.Operators.MINUS;
+			}
+			//solve argumment 1
+			finalOperation.type_argumment_1 = Operation.types.NUMBER;
+			finalOperation.number_value_1 = float.Parse (toSolve.Substring (0, index));
+
+
+			//solve argumment 2
+			if (toSolve.Substring (index + 1, toSolve.Length - (index+1)).Contains ('+') || toSolve.Substring (index + 1, toSolve.Length - (index+1)).Contains ('-')) 
+			{
+				finalOperation.type_argumment_2 = Operation.types.OPERATION;
+				finalOperation.operation_value_2 = operationInterpreter (toSolve.Substring (index + 1, toSolve.Length - (index+1)));
+			}
+			else
+			{
+				//need implement variables
+				finalOperation.type_argumment_2 = Operation.types.NUMBER;
+				finalOperation.number_value_2 = float.Parse (toSolve.Substring (index + 1, toSolve.Length - (index+1)));
+			}
+		}
+
+		return finalOperation;
+	}
+
 	void whileInterpreter(String condition, String corpus)
 	{
 		WhileForm whileObj = new WhileForm ();
@@ -127,81 +318,16 @@ public class PlattaformTest : MonoBehaviour
 
 		whileObj.Corpus = corpus;
 		//Debug.Log ("Condição: " + condition);
-		if (condition.StartsWith ("true")) 
-		{
-			Expression whileTrueExpression = new Expression ();
-			whileTrueExpression.initiate ();
-
-			whileTrueExpression.condition = Expression.ConditionOperator.TRUE;
-			whileObj.mainExpression = whileTrueExpression;
-
-			corpusInterpreter (whileObj.Corpus, whileObj);
-		}
-		else 
-		{						
-			string arg1Send = "";
-			string arg2Send = ""; 
-			ConditionOperator operatorSend = ConditionOperator.LessThan;
-			int indexOperator = -99;
-			for(int iterator = 0; iterator < condition.Length; iterator++)
-			{
-				if(condition[iterator].Equals('>') || condition[iterator].Equals('<') || condition[iterator].Equals('='))
-				{
-					Debug.Log ("Founded a contitional " +iterator);
-					indexOperator = iterator;
-					if (condition [iterator + 1].Equals ('=')) 
-					{						
-						//Debug.Log ("firs Substring: 0 - " +indexOperator);
-						//Debug.Log ("second Substring: " +(indexOperator+2) +" - " +(condition.Length - indexOperator+2));
-						//Debug.Log(condition.Length + " \\ " +indexOperator);
-						arg1Send = condition.Substring (0, indexOperator);
-						arg2Send = condition.Substring ((indexOperator+2), (condition.Length - (indexOperator+2)));
-						if (condition [iterator].Equals ('>')) 
-						{
-							operatorSend = ConditionOperator.MoreThanEquals;
-						} 
-						else if (condition [iterator].Equals ('=')) 
-						{
-							operatorSend = ConditionOperator.Equals;
-						}
-						else
-						{
-							operatorSend = ConditionOperator.LessThanEquals;
-						}
-						break;					
-					}
-					else 
-					{
-						//Debug.Log ("firs Substring: 0 - " +indexOperator);
-						//Debug.Log ("second Substring: " +(indexOperator+1) +" - " +(condition.Length - indexOperator+1));
-						//Debug.Log(condition.Length + " \\ " +indexOperator);
-						arg1Send = condition.Substring (0, indexOperator);
-						arg2Send = condition.Substring ((indexOperator+1), (condition.Length - (indexOperator+1)));
-						if (condition [iterator].Equals ('>')) 
-						{
-							operatorSend = ConditionOperator.MoreThan;
-						} 
-						else
-						{
-							operatorSend = ConditionOperator.LessThan;
-						}
-						break;
-					}
-				}
-			}
-			conditonInterpreter (arg1Send, arg2Send, operatorSend, whileObj);
-			//conditionTest 
-			//Debug.Log("Condição: " +conditionTest);
-			//Interp the condition
-		}	
+		whileObj.mainExpression = expressionInterpreter(condition);
+		corpusInterpreter (whileObj);
 	}
 
 
 	void whileAct(WhileForm whileCommand)
 	{
 
-		Debug.Log ("enter in act");
-		Debug.Log (whileCommand.mainExpression.firstArgument.numberValue + "  " + whileCommand.mainExpression.condition + "  " + whileCommand.mainExpression.secondArgument.numberValue);
+		//Debug.Log ("enter in act");
+		//Debug.Log (whileCommand.mainExpression.firstArgument.numberValue + "  " + whileCommand.mainExpression.condition + "  " + whileCommand.mainExpression.secondArgument.numberValue);
 		if (expressionCheck (whileCommand.mainExpression)) 
 		{
 			Debug.Log ("enter in exp");
@@ -212,13 +338,13 @@ public class PlattaformTest : MonoBehaviour
 				Command next = whileCommand.commands.Dequeue ();
 				//Debug.Log ("enter in commands " +whileCommand.commands.Count);
 				Executed.Enqueue (next);
-				Debug.Log ("named " +next.name);
+				//	Debug.Log ("named " +next.name);
 				switch (next.name) {
 				case "MOVE":
-					Debug.Log ("enter here case");
+					//Debug.Log ("enter here case");
 					object firstParam = next.commandParams.Dequeue ();
 					object secondParam = next.commandParams.Dequeue ();
-					Debug.Log ("commands  :" +firstParam + "  "  +secondParam);
+					//Debug.Log ("commands  :" +firstParam + "  "  +secondParam);
 					command_move ((firstParam as string), float.Parse((secondParam as string)));
 					next.commandParams.Enqueue (firstParam);
 					next.commandParams.Enqueue (secondParam);
@@ -230,65 +356,29 @@ public class PlattaformTest : MonoBehaviour
 		}
 	}
 
-
-	void conditonInterpreter( String arg1, String arg2, ConditionOperator operator1 , WhileForm whileObj)
-	{
-		Expression whileNormalExpression = new Expression ();
-		whileNormalExpression.initiate ();
-
-		whileNormalExpression.firstArgument.type = Argument.types.NUMBER;
-		whileNormalExpression.secondArgument.type = Argument.types.NUMBER;
-
-		whileNormalExpression.firstArgument.numberValue = Int32.Parse (Clean(arg1));
-		whileNormalExpression.secondArgument.numberValue = Int32.Parse (Clean(arg2));
-
-		//Debug.Log("condition tested: " +argInt1 +" " +operator1 +" " +argInt2);
-		switch(operator1)
-		{
-			case ConditionOperator.LessThan:
-				whileNormalExpression.condition = Expression.ConditionOperator.LessThan;				
-				break;
-			case ConditionOperator.LessThanEquals:
-				whileNormalExpression.condition = Expression.ConditionOperator.LessThanEquals;
-				break;
-			case ConditionOperator.MoreThan:
-				whileNormalExpression.condition = Expression.ConditionOperator.MoreThan;
-				break;
-			case ConditionOperator.MoreThanEquals:
-				whileNormalExpression.condition = Expression.ConditionOperator.MoreThanEquals;
-				break;
-			case ConditionOperator.Equals:
-				whileNormalExpression.condition = Expression.ConditionOperator.Equals;
-			break;
-		}
-		whileObj.mainExpression = whileNormalExpression;
-		corpusInterpreter (whileObj.Corpus, whileObj);
-	}
-
-
 	void command_move(string direction, float moveSpeed)
 	{
 		//moveSpeed = moveSpeed * 10000;
-		Debug.Log ("enter in comannd move");
+		//	Debug.Log ("enter in comannd move");
 		if (direction == "left") 
 		{
 			transform.Translate (Vector2.left * moveSpeed * Time.deltaTime);
-			Debug.Log ("moving left");
+			//Debug.Log ("moving left");
 		}
 		else if (direction == "right") 
 		{
 			transform.Translate (Vector2.right * moveSpeed * Time.deltaTime);
-			Debug.Log ("moving right");
+			//	Debug.Log ("moving right");
 		}
 		else if (direction == "up") 
 		{
 			transform.Translate (Vector2.up * moveSpeed * Time.deltaTime);
-			Debug.Log ("moving up");
+			//Debug.Log ("moving up");
 		}
 		else
 		{
 			transform.Translate (Vector2.down * moveSpeed * Time.deltaTime);
-			Debug.Log ("moving down");
+			//Debug.Log ("moving down");
 		}			
 	}
 
@@ -371,6 +461,15 @@ public class PlattaformTest : MonoBehaviour
 
 	bool expressionCheck(Expression toCheck)
 	{
+		if (toCheck.condition == Expression.ConditionOperator.TRUE) 
+		{
+			return true;
+		}
+		else if (toCheck.condition == Expression.ConditionOperator.FALSE) 
+		{
+			return false;
+		}
+
 		float f_Item1 = 0;
 		float f_Item2 = 0;
 
@@ -438,11 +537,7 @@ public class PlattaformTest : MonoBehaviour
 			case Expression.ConditionOperator.Different:
 				return f_Item1 != f_Item2;								
 			case Expression.ConditionOperator.Equals:
-				return f_Item1 != f_Item2;	
-			case Expression.ConditionOperator.TRUE:
-				return true;
-			case Expression.ConditionOperator.FALSE:
-				return false;
+				return f_Item1 != f_Item2;		
 			case Expression.ConditionOperator.LessThan:
 				return f_Item1 < f_Item2;					
 			case Expression.ConditionOperator.LessThanEquals:
@@ -462,15 +557,16 @@ public class PlattaformTest : MonoBehaviour
 	}
 
 
-	void corpusInterpreter(string corpus, WhileForm whileObj)
+	void corpusInterpreter(WhileForm whileObj)
 	{
-		
+		string corpus = whileObj.Corpus;
+
 		ArrayList commands = new ArrayList(corpus.Split(';'));
-		Debug.Log ("corpus :" + corpus);
+		//Debug.Log ("corpus :" + corpus);
 
 		foreach( string item in commands)
 		{
-			Debug.Log ("corpus parted :" + item);
+			//Debug.Log ("corpus parted :" + item);
 			if (item.StartsWith ("move")) 
 			{
 				int stringIndexInitParam1 = 0;
@@ -524,9 +620,7 @@ public class PlattaformTest : MonoBehaviour
 				whileObj.commands.Enqueue (moveCommand);
 			}
 		}
-
-
-
+			
 		pipeline.Enqueue (whileObj);
 	}
 

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Operation 
 {
-	public enum Operators{PLUS, MINUS, MULT, DIV}
+public enum Operators{PLUS, MINUS, MULT, DIV}
 	public Operators operator_;
 
 	public enum types{VARIABLE, NUMBER, OPERATION, NONE}
