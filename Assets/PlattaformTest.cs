@@ -15,10 +15,19 @@ public class PlattaformTest : MonoBehaviour
 	public Direction MOVE_direction;
 	public float MOVE_speed;
 	public Queue pipeline;
+	public ArrayList VariableScope;
 
 	void Start () 
 	{
+		Variable test = new Variable ();
+		test.name = "chatuba";
+		test.type = Variable.types.FLOAT;
+		test.floatValue = 69f;
+
 		pipeline = new Queue ();
+		VariableScope = new ArrayList ();
+
+		VariableScope.Add (test);
 	}
 
 	void Update () 
@@ -212,7 +221,7 @@ public class PlattaformTest : MonoBehaviour
 	}
 
 	Argument argumentInterpreter(string toSolve)
-	{
+	{		
 		Argument finalArgument = new Argument ();
 		if (toSolve.Contains ('>') || toSolve.Contains ('<') || toSolve.Contains ('=') || toSolve.Contains ('&') || toSolve.Contains ('|')) 
 		{
@@ -224,11 +233,23 @@ public class PlattaformTest : MonoBehaviour
 			finalArgument.type = Argument.types.OPERATION;
 			finalArgument.operationValue = operationInterpreter(toSolve);
 		}
-		else 
-		{
-			//need implement variables
+		else if(float.TryParse(toSolve, out finalArgument.numberValue))
+		{			
 			finalArgument.type = Argument.types.NUMBER;
-			finalArgument.numberValue = float.Parse(toSolve);
+			//finalArgument.numberValue = float.Parse(toSolve);
+		}
+		else
+		{
+			Debug.Log ("Variavel encontrada");
+			finalArgument.type = Argument.types.VARIABLE;
+			foreach (Variable globalElement in VariableScope) 
+			{
+				if (globalElement.name.Equals (toSolve)) 
+				{					
+					Debug.Log ("Variavel definida");
+					finalArgument.variableValue = globalElement;							
+				}
+			}
 		}
 		return finalArgument;
 	}
@@ -339,21 +360,229 @@ public class PlattaformTest : MonoBehaviour
 				//Debug.Log ("enter in commands " +whileCommand.commands.Count);
 				Executed.Enqueue (next);
 				//	Debug.Log ("named " +next.name);
-				switch (next.name) {
-				case "MOVE":
-					//Debug.Log ("enter here case");
-					object firstParam = next.commandParams.Dequeue ();
-					object secondParam = next.commandParams.Dequeue ();
-					//Debug.Log ("commands  :" +firstParam + "  "  +secondParam);
-					command_move ((firstParam as string), float.Parse((secondParam as string)));
-					next.commandParams.Enqueue (firstParam);
-					next.commandParams.Enqueue (secondParam);
-					break;
+				switch (next.name) 
+				{
+					case "MOVE":
+						//Debug.Log ("enter here case");
+						object firstParam = next.commandParams.Dequeue ();
+						object secondParam = next.commandParams.Dequeue ();
+						//Debug.Log ("commands  :" +firstParam + "  "  +secondParam);
+						command_move ((firstParam as string), float.Parse((secondParam as string)));
+						next.commandParams.Enqueue (firstParam);
+						next.commandParams.Enqueue (secondParam);
+						break;
+					case "DECLARATION":
+						object typeParam = next.commandParams.Dequeue ();
+						object varNameParam = next.commandParams.Dequeue ();						
+
+						switch (typeParam as string) 
+						{
+							case "bool":
+								command_declaration (varNameParam as string, Variable.types.BOOL);
+								break;
+							case "float":
+								command_declaration (varNameParam as string, Variable.types.FLOAT);
+								break;
+							case "int":
+								command_declaration (varNameParam as string, Variable.types.INT);
+								break;
+						}
+						next.commandParams.Enqueue (typeParam);
+						next.commandParams.Enqueue (varNameParam);						
+						break;
+				case "ASSIGNMENT":
+					object nameVarA = next.commandParams.Dequeue ();
+					Debug.Log ("var: " +nameVarA as string);
+					if (next.commandParams.Count == 3) {
+						Debug.Log ("operation");
+						object receive1 = next.commandParams.Dequeue ();
+						object opA = next.commandParams.Dequeue ();
+						object receive2 = next.commandParams.Dequeue ();
+
+						Debug.Log ("rec 1: " + receive1 as string);
+						Debug.Log ("op: " + opA as string);
+						Debug.Log ("rec 2: " + receive2 as string);
+
+						float item1F = 0;
+						float item2F = 0;
+						int item1I = 0;
+						int item2I = 0;
+
+						if (float.TryParse (receive1 as string, out item1F)) 
+						{
+							item1F = float.Parse (receive1 as string);
+							item1I = (int) item1F;
+						} else {
+							foreach (Variable elem in VariableScope) {
+								if (elem.name.Equals (receive1 as string)) {
+									switch (elem.type) {
+										case Variable.types.FLOAT:
+											item1F = elem.floatValue;
+											item1I = (int)item1F;
+											break;
+										case Variable.types.INT:
+											item1F = elem.intValue;
+											item1I = elem.intValue;
+											break;
+									}
+								}
+							}
+						}
+
+						if (float.TryParse (receive2 as string, out item2F)) {
+							item2F = float.Parse (receive2 as string);
+							item2I = (int) item2F;
+						} else {
+							foreach (Variable elem in VariableScope) {
+								if (elem.name.Equals (receive2 as string)) {
+									switch (elem.type) {
+									case Variable.types.FLOAT:
+										item2F = elem.floatValue;
+										item2I = (int)item2F;
+										break;
+									case Variable.types.INT:
+										item2F = elem.intValue;
+										item2I = elem.intValue;
+										break;
+									}
+								}
+							}
+						}
+						Debug.Log ("OPERARARARARA: " +opA as string);
+						char op = (opA.ToString())[0];
+						command_assignment_operation (nameVarA as string, item1I, item1F, item2I, item2F, op);
+						next.commandParams.Enqueue (nameVarA);
+						next.commandParams.Enqueue (receive1);
+						next.commandParams.Enqueue (opA);
+						next.commandParams.Enqueue (receive2);
+					} else {
+						object receive = next.commandParams.Dequeue ();
+						float number = 0;
+						if (float.TryParse (receive as string, out number)) {
+							command_assignment (nameVarA as string, int.Parse (receive as string), float.Parse (receive as string), false);
+						} else {
+							foreach (Variable elem in VariableScope) {
+								if (elem.name.Equals (receive as string)) {
+									switch (elem.type) {
+									case Variable.types.BOOL:
+										command_assignment (nameVarA as string, 0, 0, elem.boolValue);
+										break;
+									case Variable.types.FLOAT:
+										command_assignment (nameVarA as string, 0, elem.floatValue, false);
+										break;
+									case Variable.types.INT:
+										command_assignment (nameVarA as string, elem.intValue, 0, false);
+										break;
+									}
+									break;
+								}
+							}
+						}
+						next.commandParams.Enqueue (nameVarA);
+						next.commandParams.Enqueue (receive);
+					}
+
+						break;
 				}
 			}
 			whileCommand.commands = Executed;
 
 		}
+	}
+
+	void command_assignment_operation(string variableName, int valueI1, float valueF1, int valueI2, float valueF2, char OP)
+	{
+		Debug.Log ("operationinin: " + OP);
+		Debug.Log ("enter in comand assing");
+		foreach (Variable elem in VariableScope) 
+		{
+			if (elem.name.Equals (variableName)) 
+			{
+				Debug.Log ("encontrou variavel increment " +elem.name);
+				switch (elem.type) 
+				{			
+					case Variable.types.FLOAT:
+					switch (OP) 
+						{
+					case '+':
+							Debug.Log ("kct");
+								elem.floatValue = valueF1 + valueF2;
+								break;
+							case '-':
+								elem.floatValue = valueF1 - valueF2;
+								break;
+							case '*':
+								elem.floatValue = valueF1 * valueF2;
+								break;
+							case '/':
+								elem.floatValue = valueF1 / valueF2;
+								break;
+						}
+						break;
+					case Variable.types.INT:
+						switch (OP) 
+						{
+
+							case '+':
+						Debug.Log ("kcilda");
+								elem.intValue = valueI1 + valueI2;
+								break;
+							case '-':
+								elem.intValue = valueI1 + valueI2;
+								break;
+							case '*':
+								elem.intValue = valueI1 + valueI2;
+								break;
+							case '/':
+								elem.intValue = valueI1 + valueI2;
+								break;
+						}
+						break;
+				}
+
+				Debug.Log ("Variavel atribuida");
+
+				break;
+			}
+		}
+	}
+
+	void command_assignment(string variableName, int valueI, float valueF, bool valueB)
+	{
+		foreach (Variable elem in VariableScope) 
+		{
+			if (elem.name.Equals (variableName)) 
+			{
+				
+				switch (elem.type) 
+				{
+					case Variable.types.BOOL:
+						elem.boolValue = valueB;
+						break;
+					case Variable.types.FLOAT:
+						elem.floatValue = valueF;
+						break;
+					case Variable.types.INT:
+						elem.intValue = valueI;
+						break;
+				}
+
+				Debug.Log ("Variavel atribuida");
+
+				break;
+			}
+		}
+
+	}
+
+	void command_declaration(string newVariableName, Variable.types typeNew)
+	{
+		Variable newVar = new Variable ();
+		newVar.name = newVariableName;
+		newVar.type = typeNew;
+		//Debug.Log ("Variavel adicionada " +newVar.name);
+		VariableScope.Add (newVar);
+		//Debug.Log("kappe");
 	}
 
 	void command_move(string direction, float moveSpeed)
@@ -537,8 +766,9 @@ public class PlattaformTest : MonoBehaviour
 			case Expression.ConditionOperator.Different:
 				return f_Item1 != f_Item2;								
 			case Expression.ConditionOperator.Equals:
-				return f_Item1 != f_Item2;		
+				return f_Item1 == f_Item2;		
 			case Expression.ConditionOperator.LessThan:
+				Debug.Log (f_Item1 + " < "  +f_Item2);
 				return f_Item1 < f_Item2;					
 			case Expression.ConditionOperator.LessThanEquals:
 				return f_Item1 <= f_Item2;
@@ -577,30 +807,23 @@ public class PlattaformTest : MonoBehaviour
 				bool find1Param = true;
 				bool find2Param = false;
 
-				for (int i = 0; i < item.Length; i++) 
-				{
-					if (find1Param) 
-					{
-						if (item [i].Equals ('(')) 
-						{
-							stringIndexInitParam1 = i+1;
+				for (int i = 0; i < item.Length; i++) {
+					if (find1Param) {
+						if (item [i].Equals ('(')) {
+							stringIndexInitParam1 = i + 1;
 							//find1Param = false;
 							//find2Param = true;
 							continue;
 						}
-						if (item [i].Equals (',')) 
-						{
+						if (item [i].Equals (',')) {
 							stringIndexEndParam1 = i;
 							find1Param = false;
 							find2Param = true;
 							continue;
 						}
-					}
-					else if(find2Param)
-					{
-						if (item [i].Equals (')')) 
-						{
-							stringIndexEndParam2 = i-1;
+					} else if (find2Param) {
+						if (item [i].Equals (')')) {
+							stringIndexEndParam2 = i - 1;
 							find1Param = true;
 							find2Param = false;
 							break;
@@ -611,7 +834,7 @@ public class PlattaformTest : MonoBehaviour
 				String secondParam = item.Substring (stringIndexEndParam1 + 1, stringIndexEndParam2 - stringIndexEndParam1);
 				// Debug.Log ("1param: " + corpus.Substring (stringIndexInitParam1, stringIndexEndParam1 - stringIndexInitParam1));
 				// Debug.Log ("2param: " + corpus.Substring (stringIndexEndParam1+1, stringIndexEndParam2 - stringIndexEndParam1));
-				Command moveCommand = new Command();
+				Command moveCommand = new Command ();
 				moveCommand.initiate ();
 
 				moveCommand.name = "MOVE";
@@ -619,6 +842,107 @@ public class PlattaformTest : MonoBehaviour
 				moveCommand.commandParams.Enqueue (secondParam);
 				whileObj.commands.Enqueue (moveCommand);
 			}
+			else if (item.StartsWith ("bool") || item.StartsWith ("int") || item.StartsWith ("float")) 
+			{
+				int initIndex = 0;
+				Command variableCommand = new Command ();
+				variableCommand.initiate ();
+				variableCommand.name = "DECLARATION";
+				//assignment params, [type, variable, operator 1, operation, operator 2]
+
+				//need name
+				//type command
+				//value
+				//bool isBool = false;
+				if (item.StartsWith ("bool")) {
+					//isBool = true;
+					initIndex = 3;
+					variableCommand.commandParams.Enqueue ("bool");
+				} else if (item.StartsWith ("int")) {
+					initIndex = 2;
+					variableCommand.commandParams.Enqueue ("int");
+				} else {
+					initIndex = 4;
+					variableCommand.commandParams.Enqueue ("float");
+				}
+
+				int nameVariableIndex = item.Length;
+				//int operator1 = initIndex;
+				//int operation = initIndex;
+				//bool findName = true;
+				//bool findOp1 = false;
+
+							
+				//else if (!isBool && findOp1) 
+				//{
+				//	if (item [index].Equals ('+') || item [index].Equals ('-') || item [index].Equals ('*') || item [index].Equals ('/')) 
+				//	{
+				//		operator1 = index;
+				//		findOp1 = false;
+				//		operation = index;
+				//	}
+				//}
+
+			
+				//Debug.Log ("VARIABLE 1 ASSIGNMET NAME: " + item.Substring ((initIndex + 1), (nameVariableIndex - (initIndex + 1))));
+				//Debug.Log ("OPERATOR 1 ASSIGNMET NAME: " + item.Substring((
+				//	nameVariableIndex+1), item.Length-(nameVariableIndex+1)));
+				//Debug.Log ("VARIABLE ASSIGNMET OPERATION: " + item[operation]);
+				//Debug.Log ("OPERATOR 2 ASSIGNMET NAME: " + item.Substring((operation+1), item.Length - (operation+1)));
+
+
+				variableCommand.commandParams.Enqueue (item.Substring ((initIndex + 1), (nameVariableIndex - (initIndex + 1))));
+				//variableCommand.commandParams.Enqueue (item.Substring((nameVariableIndex+1), item.Length-(nameVariableIndex+1)));
+				//variableCommand.commandParams.Enqueue (item[operation]);
+				//variableCommand.commandParams.Enqueue (item.Substring((operation+1), item.Length - (operation+1)));
+
+
+				whileObj.commands.Enqueue (variableCommand);
+			}
+			else 
+			{
+				Command variableCommand = new Command ();
+				variableCommand.initiate ();
+				variableCommand.name = "ASSIGNMENT";
+
+				int equalIndex = 0;
+				for(int index = 0; index < item.Length; index++)
+				{
+					if(item[index].Equals('='))
+					{
+						equalIndex = index;
+					}
+				}
+				string variable = item.Substring (0, equalIndex);
+				string operationOverVariable = item.Substring (equalIndex+1, item.Length-(equalIndex+1));
+				foreach(Variable elem in VariableScope)
+				{
+					if(elem.name.Equals(variable))
+					{
+						variableCommand.commandParams.Enqueue (variable);
+						Debug.Log ("VARIAVEL ENCONTRADA");
+						if (operationOverVariable.Contains ('+') || operationOverVariable.Contains ('-') || operationOverVariable.Contains ('*') || operationOverVariable.Contains ('/')) 
+						{
+							char[] keys = { '*', '/', '+', '-' };
+							int opIndex = operationOverVariable.IndexOfAny (keys);
+											
+							variableCommand.commandParams.Enqueue (operationOverVariable.Substring (0, opIndex));
+							variableCommand.commandParams.Enqueue (operationOverVariable [opIndex]);
+							variableCommand.commandParams.Enqueue (operationOverVariable.Substring (opIndex + 1, operationOverVariable.Length - (opIndex + 1)));
+
+							Debug.Log ("command: " + operationOverVariable.Substring (0, opIndex) + "  " + operationOverVariable [opIndex] + "  " + operationOverVariable.Substring (opIndex + 1, operationOverVariable.Length - (opIndex + 1)));
+						}
+						else
+						{
+							variableCommand.commandParams.Enqueue (operationOverVariable);
+							Debug.Log ("command: " + operationOverVariable);
+						}
+						break;
+					}
+				}
+				whileObj.commands.Enqueue (variableCommand);
+			}
+
 		}
 			
 		pipeline.Enqueue (whileObj);

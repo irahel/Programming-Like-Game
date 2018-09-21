@@ -12,6 +12,5 @@ public class Variable
 	public bool boolValue;
 	public int intValue;
 	public float floatValue;
-
 }
 
