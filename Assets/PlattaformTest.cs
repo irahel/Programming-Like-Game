@@ -54,9 +54,9 @@ public class PlattaformTest : MonoBehaviour
 		playerScript.TerminalOn = true;
 	}
 
-	public void compiller()
+	public void compiller(String Command)
 	{
-		String Command = Terminal.gameObject.GetComponentInChildren<Text>().text;
+		//String Command = Terminal.gameObject.GetComponentInChildren<Text>().text;
 
 		//Debug.Log ("Command: " +Command);
 
