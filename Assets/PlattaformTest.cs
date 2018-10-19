@@ -47,13 +47,13 @@ public class PlattaformTest : MonoBehaviour
 
 
 	}
-
+	/*
 	void OnMouseDown()
 	{
-		Terminal.SetActive (true);
+		//Terminal.SetActive (true);
 		playerScript.TerminalOn = true;
 	}
-
+*/
 	public void compiller(String Command)
 	{
 		//String Command = Terminal.gameObject.GetComponentInChildren<Text>().text;

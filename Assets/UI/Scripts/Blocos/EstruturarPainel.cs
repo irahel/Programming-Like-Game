@@ -49,9 +49,10 @@ public class EstruturarPainel : MonoBehaviour {
         aVerificar.Clear();
         cochete.Clear();
 
-		plat.GetComponent<PlattaformTest> ().compiller (this.sent);
-		//Debug.Log ("Final");
-		//Debug.Log (this.sent);
+		plat.GetComponent<DoorActivator> ().getEntry (this.sent);
+		//plat.GetComponent<PlattaformTest> ().compiller (this.sent);
+		Debug.Log ("Final");
+		Debug.Log (this.sent);
 		//Debug.Log ("Correct");
 		//Debug.Log ("while(true){move(left,1);}");
     }
