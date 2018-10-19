@@ -98,6 +98,9 @@ public class EstruturarPainel : MonoBehaviour {
 			else if (aVerificar[i].nomedoBloco().Equals("mova")){
 				sent += "move(" + aVerificar[i].getTipoVariavel().ToLower() + "," + aVerificar[i].getEntrada() + ")";            
 				numeroFilhos--;
+			}else if (aVerificar[i].nomedoBloco().Equals("atribuicao")){
+				sent += "atribuicao( " + aVerificar[i].getTipoVariavel().ToLower() + " : " + aVerificar[i].getEntrada() + ")";            
+				numeroFilhos--;
 			}
 
             /*

@@ -48,7 +48,7 @@ public class DoorActivator : MonoBehaviour
 	{
 		try
 		{
-			if (entry.StartsWith("declaracao"))
+			if (entry.StartsWith("atribuicao"))
 			{
 				Debug.Log("1 verification");
 				ArrayList parts = new ArrayList(entry.Split(':'));
@@ -56,14 +56,16 @@ public class DoorActivator : MonoBehaviour
 				Debug.Log(parts[0]);
 				Debug.Log(parts[1]);
 				parts[1] = (parts[1] as string).Replace(")", "");
+				parts[1] = (parts[1] as string).Replace(" ", "");
 				parts[1] = (parts[1] as string).Replace(";", "");
 				Debug.Log(parts[1]);
-				if(parts[1].Equals("booleano"))
+				if((parts[1] as string).ToLower().Equals("verdadeiro"))
 				{
 					Debug.Log("2 verification");
 					ArrayList sub_parts = new ArrayList((parts[0] as string).Split(' '));
-
-					if (sub_parts[2].Equals("Verdadeiro"))
+					Debug.Log(sub_parts.Count);
+					Debug.Log(sub_parts[2]);
+					if (sub_parts[1].Equals("energia"))
 					{
 						Debug.Log("3 verification");
 						doWhatUNeed();
